@@ -2,15 +2,45 @@ var express = require('express');
 var app = express();
 var exec = require('child_process').exec;
 var Parse = require('parse').Parse;
+var bodyParser = require('body-parser');
 
 Parse.initialize("hTpkQ62vQCT1GnCpFzWbg5afa2K64mhVvAknLByG", "Fib8IvNfUhyTbYUVn5s82acCKM8IBu5mqUYtodmk");
 
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded());
+
 var version_namespace = '/api/v1';
-app.get(version_namespace + '/source/:id', function(req, res) {
+app.get(version_namespace + '/index', function(req, res) {
+    var endpoints = [];
+
+    var power = {};
+    power.name = "Power";
+    power.method = "PUT";
+    power.endpoint = "/power";
+    var options = {};
+    options.key = "on";
+    options.values = [{name:"On", value:true},{name:"Off", value:false}];
+    power.options = options;
+    endpoints.push(power);
+
+    var source = {};
+    source.name = "Source";
+    source.method = "PUT";
+    source.endpoint = "/source";
+    options = {};
+    options.key = "source";
+    options.values = [{name:"TV", value:1}, {name:"AV", value:2}, {name:"GameCube", value:3}, {name:"OSMC", value:4}, {name:"Chromecast", value:5}, {name:"Raspberry Pi", value:6}];
+    source.options = options;
+    endpoints.push(source);
+    
+    return res.send(endpoints);
+});
+
+app.put(version_namespace + '/source', function(req, res) {
     get_tv_state(function(tv){
-	var increment = req.params.id - tv.get("source");
+	var increment = req.body.source - tv.get("source");
 	change_source(increment, function(){
-	    tv.save({source : Number(req.params.id)}, {success:
+	    tv.save({source : Number(req.body.source)}, {success:
 					       function(object){
 						   return res.send('success');
 					       },
@@ -28,9 +58,9 @@ app.get(version_namespace + '/source/:id', function(req, res) {
     });
 });
 
-app.get(version_namespace + '/power_on', function(req, res) {
+app.put(version_namespace + '/power', function(req, res) {
     get_tv_state(function(tv){
-	if (!tv.get("on")){
+	if (tv.get("on") != req.body.on){
 	    toggle_power(function(){
 		tv.save({on : !tv.get("on")}).then(function(object){
 		    return res.send('success');
@@ -39,21 +69,6 @@ app.get(version_namespace + '/power_on', function(req, res) {
 		res.statusCode = 500;
 		return res.send('failure');
 	    });
-	}
-    });
-});
-
-app.get(version_namespace + '/power_off', function(req, res) {
-    get_tv_state(function(tv){
-	if (tv.get("on")){
-	    toggle_power(function(){
-		tv.save({on : !tv.get("on")}).then(function(object){
-		    return res.send('success');
-		});
-	    }, function(){
-		res.statusCode = 500;
-		return res.send('failure');
-	    });	
 	}
     });
 });
