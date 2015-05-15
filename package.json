@@ -4,6 +4,7 @@
     "version": "0.0.1",
     "dependencies": {
 	"express": "3.x",
-	"parse" : "1.4.2"
+	"parse" : "1.4.2",
+	"body-parser": "~1.0.0"
     }
 }
